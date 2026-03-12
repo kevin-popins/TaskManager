@@ -1,0 +1,212 @@
+﻿<Window x:Class="TaskManager.Views.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:cv="clr-namespace:TaskManager.Converters"
+        Title="Task Manager" Height="700" Width="1050"
+        Background="#F0F2F5">
+
+    <Window.Resources>
+        <cv:PriorityToColorConverter   x:Key="PrioColor"/>
+        <cv:PriorityToDisplayConverter x:Key="PrioDisplay"/>
+        <cv:DateToStringConverter      x:Key="DateStr"/>
+        <cv:OverdueToBrushConverter    x:Key="OverdueBrush"/>
+        <cv:StatusToStringConverter    x:Key="StatusStr"/>
+        <cv:StringToVisibilityConverter x:Key="StrVis"/>
+        <BooleanToVisibilityConverter  x:Key="BoolVis"/>
+
+        <Style x:Key="Btn" TargetType="Button">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="5"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.45"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="#4361EE" Padding="24,14">
+            <Grid>
+                <TextBlock Text="Task Manager" FontSize="20" FontWeight="Bold"
+                           Foreground="White" VerticalAlignment="Center"/>
+                <Button Grid.Column="1" Content="＋  Добавить задачу"
+                        Style="{StaticResource Btn}" Background="White"
+                        Foreground="#4361EE" FontWeight="SemiBold"
+                        HorizontalAlignment="Right"
+                        Command="{Binding AddCommand}"/>
+            </Grid>
+        </Border>
+
+        <!-- Error banner -->
+        <Border Grid.Row="1" Background="#FFF3CD" BorderBrush="#FFECB5" BorderThickness="0,0,0,1"
+                Padding="24,8"
+                Visibility="{Binding Error, Converter={StaticResource StrVis}}">
+            <TextBlock Text="{Binding Error}" Foreground="#856404" FontSize="13"/>
+        </Border>
+
+        <!-- Toolbar -->
+        <Border Grid.Row="2" Background="White" Padding="24,10"
+                BorderBrush="#DEE2E6" BorderThickness="0,0,0,1">
+            <StackPanel Orientation="Horizontal">
+                <TextBox Width="260" Padding="9,7"
+                         Text="{Binding Search, UpdateSourceTrigger=PropertyChanged}"
+                         FontSize="13" BorderBrush="#DEE2E6">
+                    <TextBox.Resources>
+                        <Style TargetType="Border">
+                            <Setter Property="CornerRadius" Value="5"/>
+                        </Style>
+                    </TextBox.Resources>
+                </TextBox>
+
+                <TextBlock Text="Фильтр:" VerticalAlignment="Center" Margin="16,0,6,0"
+                           Foreground="#6C757D" FontSize="13"/>
+                <ComboBox ItemsSource="{Binding FilterOptions}" SelectedItem="{Binding Filter}"
+                          Width="130" Padding="8,6" FontSize="13"/>
+
+                <TextBlock Text="Сортировка:" VerticalAlignment="Center" Margin="16,0,6,0"
+                           Foreground="#6C757D" FontSize="13"/>
+                <ComboBox ItemsSource="{Binding SortOptions}" SelectedItem="{Binding Sort}"
+                          Width="140" Padding="8,6" FontSize="13"/>
+            </StackPanel>
+        </Border>
+
+        <!-- DataGrid -->
+        <DataGrid Grid.Row="3" Margin="24,16,24,0"
+                  ItemsSource="{Binding TasksView}"
+                  SelectedItem="{Binding Selected}"
+                  AutoGenerateColumns="False"
+                  CanUserAddRows="False" CanUserDeleteRows="False"
+                  SelectionMode="Single"
+                  GridLinesVisibility="Horizontal"
+                  BorderBrush="#DEE2E6" RowHeaderWidth="0"
+                  Background="White" FontSize="13">
+
+            <DataGrid.RowStyle>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background"
+                            Value="{Binding IsOverdue, Converter={StaticResource OverdueBrush}}"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter Property="Background" Value="#E8ECFD"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </DataGrid.RowStyle>
+
+            <DataGrid.Columns>
+
+                <!-- Priority badge -->
+                <DataGridTemplateColumn Header="Приоритет" Width="105" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <Border CornerRadius="4" Padding="7,3" HorizontalAlignment="Left" Margin="4,2"
+                                    Background="{Binding Priority, Converter={StaticResource PrioColor}}">
+                                <TextBlock Foreground="White" FontSize="11" FontWeight="SemiBold"
+                                           Text="{Binding Priority, Converter={StaticResource PrioDisplay}}"/>
+                            </Border>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Title -->
+                <DataGridTextColumn Header="Название" Binding="{Binding Title}" Width="*"/>
+
+                <!-- Description -->
+                <DataGridTextColumn Header="Описание" Binding="{Binding Description}" Width="*"/>
+
+                <!-- Status -->
+                <DataGridTemplateColumn Header="Статус" Width="110" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Status, Converter={StaticResource StatusStr}}"
+                                       VerticalAlignment="Center" Margin="4,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Due date -->
+                <DataGridTemplateColumn Header="Срок" Width="90" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DueDate, Converter={StaticResource DateStr}}"
+                                       VerticalAlignment="Center" Margin="4,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Created -->
+                <DataGridTemplateColumn Header="Создана" Width="90" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding CreatedAt, Converter={StaticResource DateStr}}"
+                                       VerticalAlignment="Center" Margin="4,0"/>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+                <!-- Row actions -->
+                <DataGridTemplateColumn Header="Действия" Width="230" CanUserSort="False">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <StackPanel Orientation="Horizontal" Margin="4,2" VerticalAlignment="Center">
+                                <Button Content="↕ Статус" Style="{StaticResource Btn}"
+                                        Background="#6C757D" Margin="0,0,4,0"
+                                        Command="{Binding DataContext.ToggleCommand,
+                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"/>
+                                <Button Content="✏ Изменить" Style="{StaticResource Btn}"
+                                        Background="#4361EE" Margin="0,0,4,0"
+                                        Command="{Binding DataContext.EditCommand,
+                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"/>
+                                <Button Content="🗑 Удалить" Style="{StaticResource Btn}"
+                                        Background="#DC3545"
+                                        Command="{Binding DataContext.DeleteCommand,
+                                                  RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+
+            </DataGrid.Columns>
+        </DataGrid>
+
+        <!-- Loading overlay -->
+        <TextBlock Grid.Row="3" Text="Загрузка..." FontSize="16" Foreground="#6C757D"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolVis}}"/>
+
+        <!-- Bottom status bar -->
+        <Border Grid.Row="4" Background="White" BorderBrush="#DEE2E6" BorderThickness="0,1,0,0"
+                Padding="24,8">
+            <TextBlock Foreground="#6C757D" FontSize="12">
+                <Run Text="Выбрана: "/>
+                <Run Text="{Binding Selected.Title, FallbackValue='—'}"/>
+            </TextBlock>
+        </Border>
+    </Grid>
+</Window>
